@@ -1,0 +1,17 @@
+{
+  "name": "unnestcss",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Simple CSS unnesting",
+  "main": "out/index.js",
+  "keywords": [
+    "compatibility",
+    "css",
+    "nesting",
+    "nest",
+    "unnesting",
+    "unnest"
+  ],
+  "author": "startracex",
+  "license": "MIT"
+}

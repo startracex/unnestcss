@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "lib": ["ES2015", "DOM"],
+    "declaration": true,
+    "declarationMap": true,
+    "ignoreDeprecations": "5.0",
+    "outDir": "out",
+    "rootDir": "./src"
+  }
+}
