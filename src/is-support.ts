@@ -10,10 +10,7 @@ export function isSupport() {
   for (const browser of browsers) {
     const match = navigator.userAgent.match(browser.regex);
     if (match) {
-      if (Number(match[1]) >= browser.version) {
-        return true;
-      }
-      return false;
+      return Number(match[1]) >= browser.version;
     }
   }
   return false;
