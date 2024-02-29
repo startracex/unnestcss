@@ -81,6 +81,7 @@ export class Parser {
           }
         }
         this._selectorStart = this.index + 1;
+        this._contentStart = this.index + 1;
         continue;
       }
     }
