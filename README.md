@@ -1,33 +1,33 @@
 # unnestcss
 
-Simple CSS unnesting.
+Unnest CSS.
 
 ```ts
 import { unnest } from "unnestcss";
 
 unnest(`
 .a {
-  --a:A;
-  .b{
-    --b:B;
+  --a: A;
+  .b {
+    --b: B;
   }
 }
 `);
 /* 
-  Chrome 120+=
+  Chrome 120+= (keep nesting)
   .a {
-    --a:A;
-    .b{
-      --b:B;
+    --a: A;
+    .b {
+      --b: B;
     }
   }
 
-  Chrome 120-
+  Chrome 120- (unnest)
   .a {
     --a:A;
    }
   .a .b{
-      --b:B;
+    --b:B;
   }
 */
 
