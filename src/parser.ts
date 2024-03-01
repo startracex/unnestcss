@@ -15,7 +15,6 @@ export class Parser {
   result: ParseResult;
 
   private _lastStack: ParseResult[] = [];
-  private _selector: string;
   private _selectorStart: number = 0;
   private _contentStart: number = 0;
   private _deep = 0;
@@ -64,11 +63,11 @@ export class Parser {
 
       if (char === LeftBrance) {
         this._deep++;
-        this._selector = this.raw.slice(this._selectorStart, this.index);
+        const selector = this.raw.slice(this._selectorStart, this.index);
         this._selectorStart = this.index + 1;
         this._contentStart = this.index + 1;
         const childResult: ParseResult = {
-          selector: this._selector,
+          selector,
           content: "",
           deep: this._deep,
           index: this.index,
