@@ -1,4 +1,4 @@
-const LeftBrance = "{";
+const LeftBrace = "{";
 const RightBrace = "}";
 
 export interface ParseResult {
@@ -75,7 +75,7 @@ export class Parser {
        *
        * Creates a new result for the current selector and pushes it to the stack.
        */
-      if (char === LeftBrance) {
+      if (char === LeftBrace) {
         _deep++;
         const selector = this.raw.slice(_selectorStart, this.index);
         _selectorStart = this.index + 1;
@@ -136,7 +136,7 @@ export class Parser {
     let currentContent = result.content.trim();
     if (currentContent) {
       unnestResult +=
-        currentSelector + LeftBrance + currentContent + RightBrace;
+        currentSelector + LeftBrace + currentContent + RightBrace;
     }
 
     for (const child of result.children) {
