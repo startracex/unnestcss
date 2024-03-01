@@ -14,11 +14,6 @@ export class Parser {
   index: number = 0;
   result: ParseResult;
 
-  private _lastStack: ParseResult[] = [];
-  private _selectorStart: number = 0;
-  private _contentStart: number = 0;
-  private _deep = 0;
-
   constructor(
     raw: string,
     result: ParseResult = {
@@ -34,6 +29,11 @@ export class Parser {
   }
 
   parse(): ParseResult {
+    const _lastStack: ParseResult[] = [];
+    let _selectorStart: number = 0;
+    let _contentStart: number = 0;
+    let _deep = 0;
+
     for (this.index = 0; this.index < this.raw.length; this.index++) {
       const char = this.raw[this.index];
 
@@ -53,42 +53,39 @@ export class Parser {
       }
 
       if (char === ";") {
-        this._selectorStart = this.index + 1;
-        this.result.content += this.raw.slice(
-          this._contentStart,
-          this.index + 1
-        );
+        _selectorStart = this.index + 1;
+        this.result.content += this.raw.slice(_contentStart, this.index + 1);
         continue;
       }
 
       if (char === LeftBrance) {
-        this._deep++;
-        const selector = this.raw.slice(this._selectorStart, this.index);
-        this._selectorStart = this.index + 1;
-        this._contentStart = this.index + 1;
+        _deep++;
+        const selector = this.raw.slice(_selectorStart, this.index);
+        _selectorStart = this.index + 1;
+        _contentStart = this.index + 1;
         const childResult: ParseResult = {
           selector,
           content: "",
-          deep: this._deep,
+          deep: _deep,
           index: this.index,
           children: [],
         };
-        this._lastStack.push(this.result);
+        _lastStack.push(this.result);
         this.result = childResult;
         continue;
       }
 
       if (char === RightBrace) {
-        this._deep--;
-        if (this._lastStack.length > 0) {
-          const parent = this._lastStack.pop();
+        _deep--;
+        if (_lastStack.length > 0) {
+          const parent = _lastStack.pop();
           if (parent) {
             parent.children.push(this.result);
             this.result = parent;
           }
         }
-        this._selectorStart = this.index + 1;
-        this._contentStart = this.index + 1;
+        _selectorStart = this.index + 1;
+        _contentStart = this.index + 1;
         continue;
       }
     }
@@ -124,7 +121,6 @@ export class Parser {
       const childCSS = this.unnest(child, currentSelector);
       unnestResult += childCSS;
     }
-
     return unnestResult;
   }
 }
