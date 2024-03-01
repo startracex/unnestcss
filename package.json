@@ -13,5 +13,9 @@
     "unnest"
   ],
   "author": "startracex",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/startracex/unnestcss.git"
+  }
 }
