@@ -1,13 +1,15 @@
 import { isSupport } from "./is-support.js";
 import { Parser } from "./parser.js";
 
-function unnest(cssText: string, keepNesting = isSupport()) {
+function unnest(cssText: string, keepNesting = isSupport()): string {
   if (keepNesting) {
     return cssText;
   }
   const un = new Parser(cssText);
-  return un.unnest(un.parse());
+  un.parse();
+  un.unnest();
+  return un.css;
 }
 
-export { unnest, isSupport };
+export { unnest, isSupport, Parser };
 export default unnest;

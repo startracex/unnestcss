@@ -13,6 +13,7 @@ export class Parser {
   raw: string;
   index: number = 0;
   result: ParseResult;
+  css: string;
 
   constructor(
     raw: string,
@@ -120,29 +121,29 @@ export class Parser {
     parentSelector: string = ""
   ): string {
     let unnestResult = "";
-    let currentSelector = result.selector.trim();
-    if (currentSelector === "&") {
+    let selector = result.selector.trim();
+    if (selector === "&") {
       if (result.deep === 1) {
-        currentSelector = ":scope";
+        selector = ":scope";
       } else {
-        currentSelector = parentSelector + ":is(" + parentSelector + ")";
+        selector = parentSelector + ":is(" + parentSelector + ")";
       }
-    } else if (currentSelector.includes("&")) {
-      currentSelector = currentSelector.replace("&", parentSelector).trim();
+    } else if (selector.includes("&")) {
+      selector = selector.replace("&", parentSelector).trim();
     } else {
-      currentSelector = (parentSelector + " " + currentSelector).trim();
+      selector = (parentSelector + " " + selector).trim();
     }
 
-    let currentContent = result.content.trim();
-    if (currentContent) {
-      unnestResult +=
-        currentSelector + LeftBrace + currentContent + RightBrace;
+    let content = result.content.trim();
+    if (content) {
+      unnestResult += selector + LeftBrace + content + RightBrace;
     }
 
     for (const child of result.children) {
-      const childCSS = this.unnest(child, currentSelector);
+      const childCSS = this.unnest(child, selector);
       unnestResult += childCSS;
     }
+    this.css = unnestResult;
     return unnestResult;
   }
 }
