@@ -65,7 +65,7 @@ export class Parser {
        */
       if (char === ";") {
         _selectorStart = this.index + 1;
-        this.result.content += this.raw
+        this.result.content = this.raw
           .slice(_contentStart, this.index + 1)
           .trim(); // Trim content start.
         continue;
