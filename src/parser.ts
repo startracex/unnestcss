@@ -131,8 +131,8 @@ export class Parser {
         selector = parentSelector + ":is(" + parentSelector + ")";
       }
     } else if (selector.includes("&")) {
-      selector = selector.replace("&", parentSelector);
-    } else {
+      selector = selector.replaceAll("&", parentSelector);
+    } else if (result.deep > 1) {
       selector = parentSelector + " " + selector;
     }
 
