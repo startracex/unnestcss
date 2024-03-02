@@ -65,7 +65,9 @@ export class Parser {
        */
       if (char === ";") {
         _selectorStart = this.index + 1;
-        this.result.content += this.raw.slice(_contentStart, this.index + 1);
+        this.result.content += this.raw
+          .slice(_contentStart, this.index + 1)
+          .trim(); // Trim content start.
         continue;
       }
 
@@ -78,7 +80,7 @@ export class Parser {
        */
       if (char === LeftBrace) {
         _deep++;
-        const selector = this.raw.slice(_selectorStart, this.index);
+        const selector = this.raw.slice(_selectorStart, this.index).trim(); // Trim selector start.
         _selectorStart = this.index + 1;
         _contentStart = this.index + 1;
         const childResult: ParseResult = {
@@ -121,26 +123,26 @@ export class Parser {
     parentSelector: string = ""
   ): string {
     let unnestResult = "";
-    let selector = result.selector.trim();
-    if (selector === "&") {
+    let currentSelector = result.selector;
+    if (currentSelector === "&") {
       if (result.deep === 1) {
-        selector = ":scope";
+        currentSelector = ":scope";
       } else {
-        selector = parentSelector + ":is(" + parentSelector + ")";
+        currentSelector = parentSelector + ":is(" + parentSelector + ")";
       }
-    } else if (selector.includes("&")) {
-      selector = selector.replace("&", parentSelector).trim();
+    } else if (currentSelector.includes("&")) {
+      currentSelector = currentSelector.replace("&", parentSelector);
     } else {
-      selector = (parentSelector + " " + selector).trim();
+      currentSelector = parentSelector + " " + currentSelector;
     }
 
-    let content = result.content.trim();
-    if (content) {
-      unnestResult += selector + LeftBrace + content + RightBrace;
+    let currentContent = result.content;
+    if (currentContent) {
+      unnestResult += currentSelector + LeftBrace + currentContent + RightBrace;
     }
 
     for (const child of result.children) {
-      const childCSS = this.unnest(child, selector);
+      const childCSS = this.unnest(child, currentSelector);
       unnestResult += childCSS;
     }
     this.css = unnestResult;
