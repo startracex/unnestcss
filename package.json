@@ -1,6 +1,8 @@
 {
   "name": "unnestcss",
+  "type": "module",
   "scripts": {
+    "build": "rollup -c",
     "format": "dprint fmt",
     "format:check": "dprint check",
     "lint": "biome lint --fix",
@@ -10,7 +12,10 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@startracex/dev-config": "^0.5.0",
+    "@types/node": "^24.3.0",
     "dprint": "^0.50.1",
+    "rollup": "4.46.2",
+    "rollup-plugin-oxc": "^0.6.1",
     "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@10.15.0"
