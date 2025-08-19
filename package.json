@@ -18,5 +18,7 @@
     "rollup-plugin-oxc": "^0.6.1",
     "vitest": "^3.2.4"
   },
+  "license": "MIT",
+  "author": "startracex",
   "packageManager": "pnpm@10.15.0"
 }
