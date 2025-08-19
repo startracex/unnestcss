@@ -3,7 +3,7 @@ import { RULESET } from "./enum.js";
 import { tokenize } from "./tokenizer.ts";
 import type { Element, Middleware } from "./types.ts";
 
-export function middleware(collection: Middleware[]): Middleware {
+export const middleware = (collection: Middleware[]): Middleware => {
   const length = sizeof(collection);
 
   return (element, index, children, callback) => {
@@ -15,9 +15,9 @@ export function middleware(collection: Middleware[]): Middleware {
 
     return output;
   };
-}
+};
 
-export function namespace(element: Element): string | void {
+export const namespace = (element: Element): string | void => {
   switch (element.type) {
     case RULESET:
       element.props = element.props.map((value) =>
@@ -58,4 +58,4 @@ export function namespace(element: Element): string | void {
         }),
       );
   }
-}
+};

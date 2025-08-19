@@ -29,13 +29,13 @@ import {
 } from "./tokenizer.ts";
 import type { Element } from "./types.ts";
 
-export function compile(value: string): Element[] {
+export const compile = (value: string): Element[] => {
   return dealloc(
     parse("", null, null, null, [""], ((value as any) = alloc(value)), 0, [0], value as any),
   );
-}
+};
 
-export function parse(
+export const parse = (
   value: string,
   root: Element,
   parent: Element | null,
@@ -45,7 +45,7 @@ export function parse(
   pseudo: number,
   points: number[],
   declarations: string[] | Element[],
-): Element[] {
+): Element[] => {
   let index = 0;
   let offset = 0;
   let length = pseudo;
@@ -312,9 +312,9 @@ export function parse(
   }
 
   return rulesets;
-}
+};
 
-export function ruleset(
+export const ruleset = (
   value: string,
   root: Element,
   parent: Element | null,
@@ -327,7 +327,7 @@ export function ruleset(
   children: Element[],
   length: number,
   siblings?: Element[],
-): Element {
+): Element => {
   let post = offset - 1;
   const rule = offset === 0 ? rules : [""];
   const size = sizeof(rule);
@@ -354,24 +354,24 @@ export function ruleset(
     length,
     siblings,
   );
-}
+};
 
-export function comment(
+export const comment = (
   value: string,
   root: Element,
   parent: Element | null,
   siblings?: Element[],
-): Element {
+): Element => {
   return node(value, root, parent, COMMENT, from(char()), substr(value, 2, -2), 0, siblings);
-}
+};
 
-export function declaration(
+export const declaration = (
   value: string,
   root: Element,
   parent: Element | null,
   length: number,
   siblings?: Element[],
-): Element {
+): Element => {
   return node(
     value,
     root,
@@ -382,4 +382,4 @@ export function declaration(
     length,
     siblings,
   );
-}
+};

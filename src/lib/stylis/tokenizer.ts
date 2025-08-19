@@ -8,7 +8,7 @@ export var position = 0;
 export var character = 0;
 export var characters = "";
 
-export function node(
+export const node = (
   value: string,
   root: Element | null,
   parent: Element | null,
@@ -17,7 +17,7 @@ export function node(
   children: Element[] | string,
   length: number,
   siblings: Element[],
-): Element {
+): Element => {
   return {
     value: value,
     root: root,
@@ -31,22 +31,22 @@ export function node(
     return: "",
     siblings: siblings,
   } as Element;
-}
+};
 
-export function copy(root: Element, props: Partial<Element>): Element {
+export const copy = (root: Element, props: Partial<Element>): Element => {
   return assign(
     node("", null, null, "", null, null, 0, root.siblings),
     root,
     { length: -root.length },
     props,
   );
-}
+};
 
-export function char(): number {
+export const char = (): number => {
   return character;
-}
+};
 
-export function prev(): number {
+export const prev = (): number => {
   character = position > 0 ? charat(characters, --position) : 0;
 
   column--;
@@ -56,9 +56,9 @@ export function prev(): number {
   }
 
   return character;
-}
+};
 
-export function next(): number {
+export const next = (): number => {
   character = position < length ? charat(characters, position++) : 0;
 
   column++;
@@ -68,21 +68,21 @@ export function next(): number {
   }
 
   return character;
-}
+};
 
-export function peek(): number {
+export const peek = (): number => {
   return charat(characters, position);
-}
+};
 
-export function caret(): number {
+export const caret = (): number => {
   return position;
-}
+};
 
-export function slice(begin: number, end: number): string {
+export const slice = (begin: number, end: number): string => {
   return substr(characters, begin, end);
-}
+};
 
-export function token(type: number): number {
+export const token = (type: number): number => {
   switch (type) {
     // \0 \t \n \r \s whitespace token
     case 0:
@@ -120,31 +120,31 @@ export function token(type: number): number {
   }
 
   return 0;
-}
+};
 
-export function alloc(value: string): any[] {
+export const alloc = (value: string): any[] => {
   line = column = 1;
   length = strlen((characters = value));
   position = 0;
   return [];
-}
+};
 
-export function dealloc(value: any): any {
+export const dealloc = (value: any): any => {
   characters = "";
   return value;
-}
+};
 
-export function delimit(type: number): string {
+export const delimit = (type: number): string => {
   return trim(
     slice(position - 1, delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type)),
   );
-}
+};
 
-export function tokenize(value: string): string[] {
+export const tokenize = (value: string): string[] => {
   return dealloc(tokenizer(alloc(value)));
-}
+};
 
-export function whitespace(type: number): string {
+export const whitespace = (type: number): string => {
   while ((character = peek())) {
     if (character < 33) {
       next();
@@ -154,9 +154,9 @@ export function whitespace(type: number): string {
   }
 
   return token(type) > 2 || token(character) > 3 ? "" : " ";
-}
+};
 
-export function tokenizer(children: string[]): string[] {
+export const tokenizer = (children: string[]): string[] => {
   while (next()) {
     switch (token(character)) {
       case 0:
@@ -171,9 +171,9 @@ export function tokenizer(children: string[]): string[] {
   }
 
   return children;
-}
+};
 
-export function escaping(index: number, count: number): string {
+export const escaping = (index: number, count: number): string => {
   while (--count && next()) {
     // not 0-9 A-F a-f
     if (
@@ -187,9 +187,9 @@ export function escaping(index: number, count: number): string {
   }
 
   return slice(index, caret() + +(count < 6 && peek() === 32 && next() === 32));
-}
+};
 
-export function delimiter(type: number): number {
+export const delimiter = (type: number): number => {
   while (next()) {
     switch (character) {
       // ] ) " '
@@ -216,9 +216,9 @@ export function delimiter(type: number): number {
   }
 
   return position;
-}
+};
 
-export function commenter(type: number, index: number): string {
+export const commenter = (type: number, index: number): string => {
   while (next()) {
     // //
     if (type + character === 47 + 10) {
@@ -231,12 +231,12 @@ export function commenter(type: number, index: number): string {
   }
 
   return `/*${slice(index, position - 1)}*${from(type === 47 ? type : next())}`;
-}
+};
 
-export function identifier(index: number): string {
+export const identifier = (index: number): string => {
   while (!token(peek())) {
     next();
   }
 
   return slice(index, position);
-}
+};
