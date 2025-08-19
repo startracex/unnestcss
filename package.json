@@ -1,5 +1,7 @@
 {
   "name": "unnestcss",
+  "version": "0.1.0",
+  "description": "A library for un-nesting CSS",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -18,7 +20,26 @@
     "rollup-plugin-oxc": "^0.6.1",
     "vitest": "^3.2.4"
   },
+  "exports": {
+    ".": {
+      "import": "./out/index.js",
+      "require": "./out/index.cjs"
+    },
+    "./*.js": {
+      "import": "./out/*.js",
+      "require": "./out/*.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "out",
+    "src"
+  ],
   "license": "MIT",
   "author": "startracex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/startracex/unnestcss.git"
+  },
   "packageManager": "pnpm@10.15.0"
 }
