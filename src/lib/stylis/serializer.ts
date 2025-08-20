@@ -2,16 +2,6 @@ import { IMPORT, LAYER, COMMENT, RULESET, DECLARATION, KEYFRAMES, NAMESPACE } fr
 import type { Element, Middleware } from "./types.ts";
 import { strlen } from "./utility.ts";
 
-export const serialize = (children: Element[], callback: Middleware): string => {
-  var output = "";
-
-  for (let i = 0; i < children.length; i++) {
-    output += callback(children[i], i, children, callback) || "";
-  }
-
-  return output;
-};
-
 export const stringify = (
   element: Element,
   _index: number,
@@ -40,4 +30,14 @@ export const stringify = (
   return strlen((children = serialize(element.children, callback) as any))
     ? (element.return = `${element.value}{${children}}`)
     : "";
+};
+
+export const serialize = (children: Element[], callback: Middleware): string => {
+  var output = "";
+
+  for (let i = 0; i < children.length; i++) {
+    output += callback(children[i], i, children, callback) || "";
+  }
+
+  return output;
 };
