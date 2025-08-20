@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { compile, middleware, serialize, stringify } from "./stylis.ts";
 import host from "./host.ts";
 
-function serializeHost(value) {
+function serializeHost(value: string): string {
   return serialize(compile(value), middleware([host, stringify]));
 }
 
@@ -34,10 +34,9 @@ describe("Host", () => {
             width: 5;
           }
         }
-        `)
+        `),
     ).to.equal(
       [
-        //
         `:host{width:0;}`,
         `:host(:hover){width:1;}`,
         `:host([attr]){width:2;}`,
@@ -46,7 +45,7 @@ describe("Host", () => {
         `:host +h1{width:5;}`,
         `:host ~h1{width:5;}`,
         `:host >h1{width:5;}`,
-      ].join("")
+      ].join(""),
     );
   });
 });
