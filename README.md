@@ -1,5 +1,7 @@
 # unnestcss
 
+A library for un-nesting CSS.
+
 ## Installation
 
 ```bash
