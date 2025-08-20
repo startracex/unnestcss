@@ -18,6 +18,9 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
+      - run: |
+          npm config set provenance true
+          npm config set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
       - run: pnpm install
       - run: pnpm format:check
       - run: pnpm lint:check
