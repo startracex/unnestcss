@@ -15,7 +15,10 @@ export const host = (element: Element): void => {
           case ":":
             if (tokens.length > index + 2 && tokens[index + 1] === _host) {
               const afterHostToken = tokens[index + 2];
-              if (afterHostToken === ":" || afterHostToken === "[") {
+              if (
+                afterHostToken === ":" ||
+                (afterHostToken.startsWith("[") && afterHostToken.endsWith("]"))
+              ) {
                 start = index + 2;
                 hasHost = true;
               }
