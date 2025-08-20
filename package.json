@@ -9,7 +9,7 @@
     "format:check": "dprint check",
     "lint": "biome lint --fix",
     "lint:check": "biome lint",
-    "postinstall": "lefthook install",
+    "prepare": "lefthook install",
     "test": "vitest"
   },
   "devDependencies": {
