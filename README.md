@@ -9,7 +9,11 @@ npm install unnestcss
 ## Getting Started
 
 ```js
-import unnest from "unnestcss";
+import { unnest } from "unnestcss";
+```
+
+```js
+const { unnest } = require("unnestcss");
 ```
 
 General nesting rules
