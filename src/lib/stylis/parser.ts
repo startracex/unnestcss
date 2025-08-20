@@ -29,9 +29,73 @@ import {
 } from "./tokenizer.ts";
 import type { Element } from "./types.ts";
 
-export const compile = (value: string): Element[] => {
-  return dealloc(
-    parse("", null, null, null, [""], ((value as any) = alloc(value)), 0, [0], value as any),
+export const ruleset = (
+  value: string,
+  root: Element,
+  parent: Element | null,
+  index: number,
+  offset: number,
+  rules: string[],
+  points: number[],
+  type: string,
+  props: string[],
+  children: Element[],
+  length: number,
+  siblings?: Element[],
+): Element => {
+  let post = offset - 1;
+  const rule = offset === 0 ? rules : [""];
+  const size = sizeof(rule);
+
+  for (let i = 0, j = 0, k = 0; i < index; ++i) {
+    for (
+      let x = 0, y = substr(value, post + 1, (post = abs((j = points[i])))), z = value;
+      x < size;
+      ++x
+    ) {
+      if ((z = trim(j > 0 ? `${rule[x]} ${y}` : replace(y, /&\f/g, rule[x])))) {
+        props[k++] = z;
+      }
+    }
+  }
+
+  return node(
+    value,
+    root,
+    parent,
+    offset === 0 ? RULESET : type,
+    props,
+    children,
+    length,
+    siblings,
+  );
+};
+
+export const comment = (
+  value: string,
+  root: Element,
+  parent: Element | null,
+  siblings?: Element[],
+): Element => {
+  return node(value, root, parent, COMMENT, from(char()), substr(value, 2, -2), 0, siblings);
+};
+
+export const declaration = (
+  value: string,
+  root: Element,
+  parent: Element | null,
+  length: number,
+  siblings?: Element[],
+): Element => {
+  return node(
+    value,
+    root,
+    parent,
+    DECLARATION,
+    substr(value, 0, length),
+    substr(value, length + 1, -1),
+    length,
+    siblings,
   );
 };
 
@@ -314,72 +378,8 @@ export const parse = (
   return rulesets;
 };
 
-export const ruleset = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  index: number,
-  offset: number,
-  rules: string[],
-  points: number[],
-  type: string,
-  props: string[],
-  children: Element[],
-  length: number,
-  siblings?: Element[],
-): Element => {
-  let post = offset - 1;
-  const rule = offset === 0 ? rules : [""];
-  const size = sizeof(rule);
-
-  for (let i = 0, j = 0, k = 0; i < index; ++i) {
-    for (
-      let x = 0, y = substr(value, post + 1, (post = abs((j = points[i])))), z = value;
-      x < size;
-      ++x
-    ) {
-      if ((z = trim(j > 0 ? `${rule[x]} ${y}` : replace(y, /&\f/g, rule[x])))) {
-        props[k++] = z;
-      }
-    }
-  }
-
-  return node(
-    value,
-    root,
-    parent,
-    offset === 0 ? RULESET : type,
-    props,
-    children,
-    length,
-    siblings,
-  );
-};
-
-export const comment = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  siblings?: Element[],
-): Element => {
-  return node(value, root, parent, COMMENT, from(char()), substr(value, 2, -2), 0, siblings);
-};
-
-export const declaration = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  length: number,
-  siblings?: Element[],
-): Element => {
-  return node(
-    value,
-    root,
-    parent,
-    DECLARATION,
-    substr(value, 0, length),
-    substr(value, length + 1, -1),
-    length,
-    siblings,
+export const compile = (value: string): Element[] => {
+  return dealloc(
+    parse("", null, null, null, [""], ((value as any) = alloc(value)), 0, [0], value as any),
   );
 };
