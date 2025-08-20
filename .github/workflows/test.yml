@@ -1,10 +1,10 @@
-name: Release
+name: Test
 
 on:
   push:
 
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
