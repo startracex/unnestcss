@@ -8,7 +8,7 @@ export default {
       exclude: ["**/*.test.*"],
     }).map((path) => [path.slice(4, -3), path]),
   ),
-  plugins: [oxc()],
+  plugins: [oxc({ minify: true })],
   output: [
     {
       format: "esm",
@@ -21,6 +21,7 @@ export default {
   ].map((o) => ({
     dir: "out",
     sourcemap: true,
+    hoistTransitiveImports: false,
     ...o,
   })),
 } as RollupOptions;
