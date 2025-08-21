@@ -1,6 +1,6 @@
 import { charat } from "./utility.ts";
 import { RULESET } from "./enum.js";
-import { tokenize } from "./tokenizer.ts";
+import { Tokenizer } from "./tokenizer.ts";
 import type { Element, Middleware } from "./types.ts";
 import { serialize } from "./serializer.ts";
 
@@ -14,7 +14,8 @@ export const middleware =
 export const namespace = (element: Element): string | void => {
   if (element.type === RULESET) {
     element.props = element.props.map((value) =>
-      tokenize(value)
+      new Tokenizer(value)
+        .tokenize()
         .map((value, index, children) => {
           switch (charat(value, 0)) {
             // \f
