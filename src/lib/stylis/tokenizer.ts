@@ -1,5 +1,5 @@
 import type { Element } from "./types.ts";
-import { from, trim, charat, strlen, substr, append, assign } from "./utility.ts";
+import { charat } from "./utility.ts";
 
 export var line = 1;
 export var column = 1;
@@ -34,7 +34,7 @@ export const node = (
 };
 
 export const copy = (root: Element, props: Partial<Element>): Element => {
-  return assign(
+  return Object.assign(
     node("", null, null, "", null, null, 0, root.siblings),
     root,
     { length: -root.length },
@@ -79,7 +79,7 @@ export const caret = (): number => {
 };
 
 export const slice = (begin: number, end: number): string => {
-  return substr(characters, begin, end);
+  return characters.slice(begin, end);
 };
 
 export const token = (type: number): number => {
@@ -124,7 +124,8 @@ export const token = (type: number): number => {
 
 export const alloc = (value: string): any[] => {
   line = column = 1;
-  length = strlen((characters = value));
+  characters = value;
+  length = characters.length;
   position = 0;
   return [];
 };
@@ -135,9 +136,10 @@ export const dealloc = (value: any): any => {
 };
 
 export const delimit = (type: number): string => {
-  return trim(
-    slice(position - 1, delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type)),
-  );
+  return slice(
+    position - 1,
+    delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type),
+  ).trim();
 };
 
 export const tokenize = (value: string): string[] => {
@@ -160,13 +162,13 @@ export const tokenizer = (children: string[]): string[] => {
   while (next()) {
     switch (token(character)) {
       case 0:
-        append(identifier(position - 1), children);
+        children.push(identifier(position - 1));
         break;
       case 2:
-        append(delimit(character), children);
+        children.push(delimit(character));
         break;
       default:
-        append(from(character), children);
+        children.push(String.fromCharCode(character));
     }
   }
 
@@ -223,14 +225,13 @@ export const commenter = (type: number, index: number): string => {
     // //
     if (type + character === 47 + 10) {
       break;
-    }
-    // /*
+    } // /*
     else if (type + character === 42 + 42 && peek() === 47) {
       break;
     }
   }
 
-  return `/*${slice(index, position - 1)}*${from(type === 47 ? type : next())}`;
+  return `/*${slice(index, position - 1)}*${String.fromCharCode(type === 47 ? type : next())}`;
 };
 
 export const identifier = (index: number): string => {
