@@ -1,12 +1,12 @@
 import type { Element } from "./types.ts";
 import { charat } from "./utility.ts";
 
-export var line = 1;
-export var column = 1;
-export var length = 0;
-export var position = 0;
-export var character = 0;
-export var characters = "";
+var line = 1;
+var column = 1;
+var length = 0;
+var position = 0;
+var character = 0;
+var characters = "";
 
 export const node = (
   value: string,
