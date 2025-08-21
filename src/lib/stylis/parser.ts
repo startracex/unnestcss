@@ -1,16 +1,5 @@
 import { COMMENT, DECLARATION, RULESET } from "./enum.ts";
-import {
-  abs,
-  append,
-  charat,
-  from,
-  indexof,
-  replace,
-  sizeof,
-  strlen,
-  substr,
-  trim,
-} from "./utility.ts";
+import { charat } from "./utility.ts";
 import {
   alloc,
   caret,
@@ -43,19 +32,25 @@ export const ruleset = (
   length: number,
   siblings?: Element[],
 ): Element => {
-  let post = offset - 1;
-  const rule = offset === 0 ? rules : [""];
-  const size = sizeof(rule);
+  let currentPosition = offset - 1;
 
-  for (let i = 0, j = 0, k = 0; i < index; ++i) {
-    for (
-      let x = 0, y = substr(value, post + 1, (post = abs((j = points[i])))), z = value;
-      x < size;
-      ++x
-    ) {
-      if ((z = trim(j > 0 ? `${rule[x]} ${y}` : replace(y, /&\f/g, rule[x])))) {
-        props[k++] = z;
-      }
+  const activeRules = offset === 0 ? rules : [""];
+  const ruleCount = activeRules.length;
+
+  for (let itemIndex = 0, propIndex = 0; itemIndex < index; itemIndex++) {
+    const pointPosition = points[itemIndex];
+    const segmentEnd = Math.abs(pointPosition);
+
+    const substring = value.slice(currentPosition + 1, segmentEnd);
+    currentPosition = segmentEnd;
+
+    for (let ruleIndex = 0; ruleIndex < ruleCount; ruleIndex++) {
+      const processedValue =
+        pointPosition > 0
+          ? `${activeRules[ruleIndex]} ${substring}`.trim()
+          : substring.replace(/&\f/g, activeRules[ruleIndex]).trim();
+
+      props[propIndex++] = processedValue;
     }
   }
 
@@ -77,7 +72,16 @@ export const comment = (
   parent: Element | null,
   siblings?: Element[],
 ): Element => {
-  return node(value, root, parent, COMMENT, from(char()), substr(value, 2, -2), 0, siblings);
+  return node(
+    value,
+    root,
+    parent,
+    COMMENT,
+    String.fromCharCode(char()),
+    value.slice(2, -2),
+    0,
+    siblings,
+  );
 };
 
 export const declaration = (
@@ -92,8 +96,8 @@ export const declaration = (
     root,
     parent,
     DECLARATION,
-    substr(value, 0, length),
-    substr(value, length + 1, -1),
+    value.slice(-length),
+    value.slice(-length + 1, -1),
     length,
     siblings,
   );
@@ -127,17 +131,17 @@ export const parse = (
   let characters = type;
 
   while (scanning) {
-    switch (((previous = character), (character = next()))) {
+    previous = character;
+    character = next();
+    switch (character) {
       // (
       case 40:
         if (previous !== 108 && charat(characters, length - 1) === 58) {
-          if (
-            indexof(
-              (characters += replace(delimit(character), "&", "&\f")),
-              "&\f",
-              abs(index ? points[index - 1] : 0),
-            ) !== -1
-          ) {
+          const processedChar = delimit(character).replace("&", "&\f");
+          characters += processedChar;
+          const startPos = Math.abs(index ? points[index - 1] : 0);
+
+          if (characters.indexOf("&\f", startPos) !== -1) {
             ampersand = -1;
           }
           break;
@@ -164,19 +168,18 @@ export const parse = (
         switch (peek()) {
           case 42:
           case 47:
-            append(
+            (declarations as unknown as Element[]).push(
               comment(
                 commenter(next(), caret()),
                 root,
                 parent,
                 declarations as unknown as Element[],
               ),
-              declarations as unknown as Element[],
             );
             if (
               (token(previous || 1) === 5 || token(peek() || 1) === 5) &&
-              strlen(characters) &&
-              substr(characters, -1) !== " "
+              characters.length &&
+              characters.slice(-1) !== " "
             ) {
               characters += " ";
             }
@@ -187,7 +190,7 @@ export const parse = (
         break;
       // {
       case 123 * variable:
-        points[index++] = strlen(characters) * ampersand;
+        points[index++] = characters.length * ampersand;
       // } ; \0
       case 125 * variable:
       case 59:
@@ -200,13 +203,13 @@ export const parse = (
           // ;
           case 59 + offset:
             if (ampersand === -1) {
-              characters = replace(characters, /\f/g, "");
+              characters = characters.replace(/\f/g, "");
             }
             if (
               property > 0 &&
-              (strlen(characters) - length || (variable === 0 && previous === 47))
+              (characters.length - length || (variable === 0 && previous === 47))
             ) {
-              append(
+              (declarations as unknown as Element[]).push(
                 property > 32
                   ? declaration(
                       `${characters};`,
@@ -216,13 +219,12 @@ export const parse = (
                       declarations as unknown as Element[],
                     )
                   : declaration(
-                      `${replace(characters, " ", "")};`,
+                      `${characters.replace(" ", "")};`,
                       rule as Element,
                       parent,
                       length - 2,
                       declarations as unknown as Element[],
                     ),
-                declarations as unknown as Element[],
               );
             }
             break;
@@ -231,7 +233,9 @@ export const parse = (
             characters += ";";
           // { rule/at-rule
           default:
-            append(
+            props = [];
+            children = [];
+            rulesets.push(
               (reference = ruleset(
                 characters,
                 root,
@@ -241,12 +245,11 @@ export const parse = (
                 rules,
                 points,
                 type,
-                (props = []),
-                (children = []),
+                props,
+                children,
                 length,
                 rulesets,
               )),
-              rulesets,
             );
 
             if (character === 123) {
@@ -288,23 +291,26 @@ export const parse = (
                     reference,
                     reference,
                     rule &&
-                      append(
-                        ruleset(
-                          value,
-                          reference,
-                          reference,
-                          0,
-                          0,
-                          rules,
-                          points,
-                          type,
-                          rules,
-                          (props = []),
-                          length,
-                          children,
-                        ),
-                        children,
-                      ),
+                      (() => {
+                        children.push(
+                          ruleset(
+                            value,
+                            reference,
+                            reference,
+                            0,
+                            0,
+                            rules,
+                            points,
+                            type,
+                            rules,
+                            (props = []),
+                            length,
+                            children,
+                          ),
+                        );
+
+                        return children as any;
+                      })(),
                     rules,
                     children,
                     length,
@@ -334,7 +340,7 @@ export const parse = (
         break;
       // :
       case 58:
-        length = 1 + strlen(characters);
+        length = 1 + characters.length;
         property = previous;
       default:
         if (variable < 1) {
@@ -344,15 +350,15 @@ export const parse = (
             continue;
           }
         }
-
-        switch (((characters += from(character)), character * variable)) {
+        characters += String.fromCharCode(character);
+        switch (character * variable) {
           // &
           case 38:
             ampersand = offset > 0 ? 1 : ((characters += "\f"), -1);
             break;
           // ,
           case 44:
-            points[index++] = (strlen(characters) - 1) * ampersand;
+            points[index++] = (characters.length - 1) * ampersand;
             ampersand = 1;
             break;
           // @
@@ -363,12 +369,13 @@ export const parse = (
             }
 
             atrule = peek();
-            offset = length = strlen((type = characters += identifier(caret())));
+            type = characters += identifier(caret());
+            offset = length = type.length;
             character++;
             break;
           // -
           case 45:
-            if (previous === 45 && strlen(characters) === 2) {
+            if (previous === 45 && characters.length === 2) {
               variable = 0;
             }
         }

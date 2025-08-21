@@ -1,6 +1,5 @@
 import { IMPORT, LAYER, COMMENT, RULESET, DECLARATION, KEYFRAMES, NAMESPACE } from "./enum.ts";
 import type { Element, Middleware } from "./types.ts";
-import { strlen } from "./utility.ts";
 
 export const stringify = (
   element: Element,
@@ -20,24 +19,33 @@ export const stringify = (
     case COMMENT:
       return "";
     case KEYFRAMES:
-      return (element.return = `${element.value}{${serialize(element.children, callback)}}`);
+      element.return = `${element.value}{${serialize(element.children, callback)}}`;
+      return element.return;
     case RULESET:
-      if (!strlen((element.value = element.props.join(",")))) {
+      element.value = element.props.join(",");
+      if (element.value === "") {
         return "";
       }
   }
 
-  return strlen((children = serialize(element.children, callback) as any))
-    ? (element.return = `${element.value}{${children}}`)
-    : "";
-};
+  children = serialize(element.children, callback) as any;
 
-export const serialize = (children: Element[], callback: Middleware): string => {
-  var output = "";
-
-  for (let i = 0; i < children.length; i++) {
-    output += callback(children[i], i, children, callback) || "";
+  if (children) {
+    element.return = `${element.value}{${children}}`;
+    return element.return;
   }
-
-  return output;
+  return "";
 };
+
+type SerializeCallback<T, R> = (
+  element: T,
+  index: number,
+  children: T[],
+  callback: SerializeCallback<T, R>,
+) => R;
+
+export const serialize = <T, F>(children: T[], callback: SerializeCallback<T, unknown>): string =>
+  children.reduce(
+    (output, child, index) => output + (callback(child, index, children, callback) || ""),
+    "",
+  );

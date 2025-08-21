@@ -1,31 +1,25 @@
-import { charat, combine, sizeof, substr, strlen } from "./utility.ts";
+import { charat } from "./utility.ts";
 import { RULESET } from "./enum.js";
 import { tokenize } from "./tokenizer.ts";
 import type { Element, Middleware } from "./types.ts";
+import { serialize } from "./serializer.ts";
 
-export const middleware = (collection: Middleware[]): Middleware => {
-  const length = sizeof(collection);
-
-  return (element, index, children, callback) => {
-    let output = "";
-
-    for (let i = 0; i < length; i++) {
-      output += collection[i](element, index, children, callback) || "";
-    }
-
-    return output;
-  };
-};
+export const middleware =
+  (collection: Middleware[]): Middleware =>
+  (element, index, children, callback) =>
+    serialize(collection, (currentMiddleware) =>
+      currentMiddleware(element, index, children, callback),
+    );
 
 export const namespace = (element: Element): string | void => {
-  switch (element.type) {
-    case RULESET:
-      element.props = element.props.map((value) =>
-        combine(tokenize(value), (value, index, children) => {
+  if (element.type === RULESET) {
+    element.props = element.props.map((value) =>
+      tokenize(value)
+        .map((value, index, children) => {
           switch (charat(value, 0)) {
             // \f
             case 12:
-              return substr(value, 1, strlen(value));
+              return value.slice(1, value.length);
             // \0 ( + > ~
             case 0:
             case 40:
@@ -37,7 +31,7 @@ export const namespace = (element: Element): string | void => {
             case 58:
               if (children[++index] === "global") {
                 children[index] = "";
-                children[++index] = `\f${substr(children[index], (index = 1), -1)}`;
+                children[++index] = `\f${children[index].slice((index = 1), -1)}`;
               }
             // \s
             case 32:
@@ -45,17 +39,17 @@ export const namespace = (element: Element): string | void => {
             default:
               switch (index) {
                 case 0:
-                  // @ts-expect-error
-                  element = value;
-                  return sizeof(children) > 1 ? "" : value;
-                case (index = sizeof(children) - 1):
+                  element = value as any;
+                  return children.length > 1 ? "" : value;
+                case (index = children.length - 1):
                 case 2:
                   return index === 2 ? value + element + element : value + element;
                 default:
                   return value;
               }
           }
-        }),
-      );
+        })
+        .join(""),
+    );
   }
 };
