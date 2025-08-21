@@ -1,11 +1,11 @@
-import { type Element, RULESET, tokenize } from "./stylis.ts";
+import { type Element, RULESET, Tokenizer } from "./stylis.ts";
 
 const _host = "host";
 
 export const host = (element: Element): void => {
   if (element.type === RULESET && element.parent?.value.startsWith(":" + _host)) {
     element.props = (element.props as string[]).map((item) => {
-      const tokens = tokenize(item);
+      const tokens = new Tokenizer(item).tokenize();
       let start: number | undefined,
         end = tokens.length,
         hasHost = false;

@@ -1,21 +1,6 @@
 import { COMMENT, DECLARATION, RULESET } from "./enum.ts";
 import { charat } from "./utility.ts";
-import {
-  alloc,
-  caret,
-  char,
-  commenter,
-  dealloc,
-  delimit,
-  escaping,
-  identifier,
-  next,
-  node,
-  peek,
-  prev,
-  token,
-  whitespace,
-} from "./tokenizer.ts";
+import { token, Tokenizer } from "./tokenizer.ts";
 import type { Element } from "./types.ts";
 
 export const ruleset = (
@@ -31,6 +16,7 @@ export const ruleset = (
   children: Element[],
   length: number,
   siblings?: Element[],
+  t?: Tokenizer,
 ): Element => {
   let currentPosition = offset - 1;
 
@@ -47,14 +33,14 @@ export const ruleset = (
     for (let ruleIndex = 0; ruleIndex < ruleCount; ruleIndex++) {
       const processedValue =
         pointPosition > 0
-          ? `${activeRules[ruleIndex]} ${substring}`.trim()
-          : substring.replace(/&\f/g, activeRules[ruleIndex]).trim();
-
-      props[propIndex++] = processedValue;
+          ? `${activeRules[ruleIndex]} ${substring}`
+          : substring.replace(/&\f/g, activeRules[ruleIndex]);
+      props[propIndex] = processedValue.trim();
+      propIndex++;
     }
   }
 
-  return node(
+  return t.node(
     value,
     root,
     parent,
@@ -71,13 +57,14 @@ export const comment = (
   root: Element,
   parent: Element | null,
   siblings?: Element[],
+  t?: Tokenizer,
 ): Element => {
-  return node(
+  return t.node(
     value,
     root,
     parent,
     COMMENT,
-    String.fromCharCode(char()),
+    String.fromCharCode(t.character),
     value.slice(2, -2),
     0,
     siblings,
@@ -90,8 +77,9 @@ export const declaration = (
   parent: Element | null,
   length: number,
   siblings?: Element[],
+  t?: Tokenizer,
 ): Element => {
-  return node(
+  return t.node(
     value,
     root,
     parent,
@@ -113,6 +101,7 @@ export const parse = (
   pseudo: number,
   points: number[],
   declarations: string[] | Element[],
+  t: Tokenizer,
 ): Element[] => {
   let index = 0;
   let offset = 0;
@@ -132,12 +121,12 @@ export const parse = (
 
   while (scanning) {
     previous = character;
-    character = next();
+    character = t.next();
     switch (character) {
       // (
       case 40:
         if (previous !== 108 && charat(characters, length - 1) === 58) {
-          const processedChar = delimit(character).replace("&", "&\f");
+          const processedChar = t.delimit(character).replace("&", "&\f");
           characters += processedChar;
           const startPos = Math.abs(index ? points[index - 1] : 0);
 
@@ -150,34 +139,35 @@ export const parse = (
       case 34:
       case 39:
       case 91:
-        characters += delimit(character);
+        characters += t.delimit(character);
         break;
       // \t \n \r \s
       case 9:
       case 10:
       case 13:
       case 32:
-        characters += whitespace(previous);
+        characters += t.whitespace(previous);
         break;
       // \
       case 92:
-        characters += escaping(caret() - 1, 7);
+        characters += t.escaping(t.caret() - 1, 7);
         continue;
       // /
       case 47:
-        switch (peek()) {
+        switch (t.peek()) {
           case 42:
           case 47:
             (declarations as unknown as Element[]).push(
               comment(
-                commenter(next(), caret()),
+                t.commenter(t.next(), t.caret()),
                 root,
                 parent,
                 declarations as unknown as Element[],
+                t,
               ),
             );
             if (
-              (token(previous || 1) === 5 || token(peek() || 1) === 5) &&
+              (token(previous || 1) === 5 || token(t.peek() || 1) === 5) &&
               characters.length &&
               characters.slice(-1) !== " "
             ) {
@@ -217,6 +207,7 @@ export const parse = (
                       parent,
                       length - 1,
                       declarations as unknown as Element[],
+                      t,
                     )
                   : declaration(
                       `${characters.replace(" ", "")};`,
@@ -224,6 +215,7 @@ export const parse = (
                       parent,
                       length - 2,
                       declarations as unknown as Element[],
+                      t,
                     ),
               );
             }
@@ -249,6 +241,7 @@ export const parse = (
                 children,
                 length,
                 rulesets,
+                t,
               )),
             );
 
@@ -264,6 +257,7 @@ export const parse = (
                   length,
                   points,
                   children,
+                  t,
                 );
               } else {
                 switch (atrule) {
@@ -306,6 +300,7 @@ export const parse = (
                             (props = []),
                             length,
                             children,
+                            t,
                           ),
                         );
 
@@ -316,6 +311,7 @@ export const parse = (
                     length,
                     points,
                     rule ? props : children,
+                    t,
                   );
                 } else {
                   parse(
@@ -328,6 +324,7 @@ export const parse = (
                     0,
                     points,
                     children,
+                    t,
                   );
                 }
               }
@@ -346,7 +343,7 @@ export const parse = (
         if (variable < 1) {
           if (character === 123) {
             --variable;
-          } else if (character === 125 && variable++ === 0 && prev() === 125) {
+          } else if (character === 125 && variable++ === 0 && t.prev() === 125) {
             continue;
           }
         }
@@ -364,12 +361,11 @@ export const parse = (
           // @
           case 64:
             // -
-            if (peek() === 45) {
-              characters += delimit(next());
+            if (t.peek() === 45) {
+              characters += t.delimit(t.next());
             }
-
-            atrule = peek();
-            type = characters += identifier(caret());
+            atrule = t.peek();
+            type = characters += t.identifier(t.caret());
             offset = length = type.length;
             character++;
             break;
@@ -386,7 +382,7 @@ export const parse = (
 };
 
 export const compile = (value: string): Element[] => {
-  return dealloc(
-    parse("", null, null, null, [""], ((value as any) = alloc(value)), 0, [0], value as any),
-  );
+  const rulesets = [];
+  const t = new Tokenizer(value);
+  return parse("", null, null, null, [""], rulesets, 0, [0], rulesets, t);
 };

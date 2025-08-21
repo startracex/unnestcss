@@ -1,87 +1,6 @@
 import type { Element } from "./types.ts";
 import { charat } from "./utility.ts";
 
-var line = 1;
-var column = 1;
-var length = 0;
-var position = 0;
-var character = 0;
-var characters = "";
-
-export const node = (
-  value: string,
-  root: Element | null,
-  parent: Element | null,
-  type: string,
-  props: string[] | string,
-  children: Element[] | string,
-  length: number,
-  siblings: Element[],
-): Element => {
-  return {
-    value: value,
-    root: root,
-    parent: parent,
-    type: type,
-    props: props,
-    children: children,
-    line: line,
-    column: column,
-    length: length,
-    return: "",
-    siblings: siblings,
-  } as Element;
-};
-
-export const copy = (root: Element, props: Partial<Element>): Element => {
-  return Object.assign(
-    node("", null, null, "", null, null, 0, root.siblings),
-    root,
-    { length: -root.length },
-    props,
-  );
-};
-
-export const char = (): number => {
-  return character;
-};
-
-export const prev = (): number => {
-  character = position > 0 ? charat(characters, --position) : 0;
-
-  column--;
-  if (character === 10) {
-    column = 1;
-    line--;
-  }
-
-  return character;
-};
-
-export const next = (): number => {
-  character = position < length ? charat(characters, position++) : 0;
-
-  column++;
-  if (character === 10) {
-    column = 1;
-    line++;
-  }
-
-  return character;
-};
-
-export const peek = (): number => {
-  return charat(characters, position);
-};
-
-export const caret = (): number => {
-  return position;
-};
-
-export const slice = (begin: number, end: number): string => {
-  return characters.slice(begin, end);
-};
-
 export const token = (type: number): number => {
   switch (type) {
     // \0 \t \n \r \s whitespace token
@@ -122,122 +41,200 @@ export const token = (type: number): number => {
   return 0;
 };
 
-export const alloc = (value: string): any[] => {
-  line = column = 1;
-  characters = value;
-  length = characters.length;
+export class Tokenizer {
+  line = 1;
+  column = 1;
+  length = 0;
   position = 0;
-  return [];
-};
-
-export const dealloc = (value: any): any => {
+  character = 0;
   characters = "";
-  return value;
-};
+  constructor(value: string) {
+    this.alloc(value);
+  }
 
-export const delimit = (type: number): string => {
-  return slice(
-    position - 1,
-    delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type),
-  ).trim();
-};
+  node(
+    value: string,
+    root: Element | null,
+    parent: Element | null,
+    type: string,
+    props: string[] | string,
+    children: Element[] | string,
+    length: number,
+    siblings: Element[],
+  ): Element {
+    return {
+      value,
+      root,
+      parent,
+      type,
+      props,
+      children,
+      line: this.line,
+      column: this.column,
+      length,
+      return: "",
+      siblings,
+    } as Element;
+  }
 
-export const tokenize = (value: string): string[] => {
-  return dealloc(tokenizer(alloc(value)));
-};
+  prev(): number {
+    this.character = this.position > 0 ? charat(this.characters, --this.position) : 0;
 
-export const whitespace = (type: number): string => {
-  while ((character = peek())) {
-    if (character < 33) {
-      next();
-    } else {
-      break;
+    this.column--;
+    if (this.character === 10) {
+      this.column = 1;
+      this.line--;
     }
+
+    return this.character;
   }
 
-  return token(type) > 2 || token(character) > 3 ? "" : " ";
-};
+  next(): number {
+    this.character = this.position < this.length ? charat(this.characters, this.position++) : 0;
 
-export const tokenizer = (children: string[]): string[] => {
-  while (next()) {
-    switch (token(character)) {
-      case 0:
-        children.push(identifier(position - 1));
-        break;
-      case 2:
-        children.push(delimit(character));
-        break;
-      default:
-        children.push(String.fromCharCode(character));
+    this.column++;
+    if (this.character === 10) {
+      this.column = 1;
+      this.line++;
     }
+
+    return this.character;
   }
 
-  return children;
-};
-
-export const escaping = (index: number, count: number): string => {
-  while (--count && next()) {
-    // not 0-9 A-F a-f
-    if (
-      character < 48 ||
-      character > 102 ||
-      (character > 57 && character < 65) ||
-      (character > 70 && character < 97)
-    ) {
-      break;
-    }
+  peek(): number {
+    return charat(this.characters, this.position);
   }
 
-  return slice(index, caret() + +(count < 6 && peek() === 32 && next() === 32));
-};
+  caret(): number {
+    return this.position;
+  }
 
-export const delimiter = (type: number): number => {
-  while (next()) {
-    switch (character) {
-      // ] ) " '
-      case type:
-        return position;
-      // " '
-      case 34:
-      case 39:
-        if (type !== 34 && type !== 39) {
-          delimiter(character);
-        }
+  slice(begin: number, end: number): string {
+    return this.characters.slice(begin, end);
+  }
+
+  alloc(value: string): any[] {
+    this.line = this.column = 1;
+    this.characters = value;
+    this.length = this.characters.length;
+    this.position = 0;
+    return [];
+  }
+
+  dealloc(value: any): any {
+    this.characters = "";
+    return value;
+  }
+
+  delimit(type: number): string {
+    return this.slice(
+      this.position - 1,
+      this._delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type),
+    ).trim();
+  }
+
+  tokenize(): string[] {
+    return this._tokenizer([]);
+  }
+
+  whitespace(type: number): string {
+    while ((this.character = this.peek())) {
+      if (this.character < 33) {
+        this.next();
+      } else {
         break;
-      // (
-      case 40:
-        if (type === 41) {
-          delimiter(type);
-        }
-        break;
-      // \
-      case 92:
-        next();
-        break;
+      }
     }
+
+    return token(type) > 2 || token(this.character) > 3 ? "" : " ";
   }
 
-  return position;
-};
-
-export const commenter = (type: number, index: number): string => {
-  while (next()) {
-    // //
-    if (type + character === 47 + 10) {
-      break;
-    } // /*
-    else if (type + character === 42 + 42 && peek() === 47) {
-      break;
+  _tokenizer(children: string[]): string[] {
+    while (this.next()) {
+      switch (token(this.character)) {
+        case 0:
+          children.push(this.identifier(this.position - 1));
+          break;
+        case 2:
+          children.push(this.delimit(this.character));
+          break;
+        default:
+          children.push(String.fromCharCode(this.character));
+      }
     }
+
+    return children;
   }
 
-  return `/*${slice(index, position - 1)}*${String.fromCharCode(type === 47 ? type : next())}`;
-};
+  escaping(index: number, count: number): string {
+    while (--count && this.next()) {
+      // not 0-9 A-F a-f
+      if (
+        this.character < 48 ||
+        this.character > 102 ||
+        (this.character > 57 && this.character < 65) ||
+        (this.character > 70 && this.character < 97)
+      ) {
+        break;
+      }
+    }
 
-export const identifier = (index: number): string => {
-  while (!token(peek())) {
-    next();
+    return this.slice(
+      index,
+      this.caret() + +(count < 6 && this.peek() === 32 && this.next() === 32),
+    );
   }
 
-  return slice(index, position);
-};
+  _delimiter(type: number): number {
+    while (this.next()) {
+      switch (this.character) {
+        // ] ) " '
+        case type:
+          return this.position;
+        // " '
+        case 34:
+        case 39:
+          if (type !== 34 && type !== 39) {
+            this._delimiter(this.character);
+          }
+          break;
+        // (
+        case 40:
+          if (type === 41) {
+            this._delimiter(type);
+          }
+          break;
+        // \
+        case 92:
+          this.next();
+          break;
+      }
+    }
+
+    return this.position;
+  }
+
+  commenter(type: number, index: number): string {
+    while (this.next()) {
+      // //
+      if (type + this.character === 47 + 10) {
+        break;
+      } // /*
+      else if (type + this.character === 42 + 42 && this.peek() === 47) {
+        break;
+      }
+    }
+
+    return `/*${this.slice(index, this.position - 1)}*${String.fromCharCode(
+      type === 47 ? type : this.next(),
+    )}`;
+  }
+
+  identifier(index: number): string {
+    while (!token(this.peek())) {
+      this.next();
+    }
+
+    return this.slice(index, this.position);
+  }
+}
