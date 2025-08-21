@@ -48,7 +48,8 @@ export class Tokenizer {
   character = 0;
   characters = "";
   constructor(value: string) {
-    this.alloc(value);
+    this.characters = value;
+    this.length = this.characters.length;
   }
 
   prev(): number {
@@ -85,19 +86,6 @@ export class Tokenizer {
 
   slice(begin: number, end: number): string {
     return this.characters.slice(begin, end);
-  }
-
-  alloc(value: string): any[] {
-    this.line = this.column = 1;
-    this.characters = value;
-    this.length = this.characters.length;
-    this.position = 0;
-    return [];
-  }
-
-  dealloc(value: any): any {
-    this.characters = "";
-    return value;
   }
 
   delimit(type: number): string {
