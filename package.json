@@ -18,8 +18,8 @@
     "@types/node": "^24.3.0",
     "dprint": "^0.50.1",
     "lefthook": "^1.12.3",
-    "rollup": "4.46.4",
-    "rollup-plugin-oxc": "^0.6.1",
+    "rollup": "4.47.1",
+    "rollup-plugin-oxc": "^0.7.0",
     "vitest": "^3.2.4"
   },
   "exports": {
