@@ -1,4 +1,3 @@
-import type { Element } from "./types.ts";
 import { charat } from "./utility.ts";
 
 export const token = (type: number): number => {
@@ -50,31 +49,6 @@ export class Tokenizer {
   characters = "";
   constructor(value: string) {
     this.alloc(value);
-  }
-
-  node(
-    value: string,
-    root: Element | null,
-    parent: Element | null,
-    type: string,
-    props: string[] | string,
-    children: Element[] | string,
-    length: number,
-    siblings: Element[],
-  ): Element {
-    return {
-      value,
-      root,
-      parent,
-      type,
-      props,
-      children,
-      line: this.line,
-      column: this.column,
-      length,
-      return: "",
-      siblings,
-    } as Element;
   }
 
   prev(): number {
