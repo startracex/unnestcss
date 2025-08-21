@@ -3,21 +3,37 @@ import { charat } from "./utility.ts";
 import { token, Tokenizer } from "./tokenizer.ts";
 import type { Element } from "./types.ts";
 
-export const ruleset = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  index: number,
-  offset: number,
-  rules: string[],
-  points: number[],
-  type: string,
-  props: string[],
-  children: Element[],
-  length: number,
-  siblings?: Element[],
-  t?: Tokenizer,
-): Element => {
+export const ruleset = ({
+  value,
+  root,
+  parent,
+  index,
+  offset,
+  rules,
+  points,
+  type,
+  props,
+  children,
+  length,
+  siblings,
+  line,
+  column,
+}: {
+  value: string;
+  root: Element;
+  parent: Element | null;
+  index: number;
+  offset: number;
+  rules: string[];
+  points: number[];
+  type: string;
+  props: string[];
+  children: Element[];
+  length: number;
+  siblings?: Element[];
+  line: number;
+  column: number;
+}): Element => {
   let currentPosition = offset - 1;
 
   const activeRules = offset === 0 ? rules : [""];
@@ -39,56 +55,80 @@ export const ruleset = (
       propIndex++;
     }
   }
-
-  return t.node(
+  return {
     value,
     root,
     parent,
-    offset === 0 ? RULESET : type,
+    type: offset === 0 ? RULESET : type,
     props,
     children,
     length,
     siblings,
-  );
+    line,
+    column,
+  } as Element;
 };
 
-export const comment = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  siblings?: Element[],
-  t?: Tokenizer,
-): Element => {
-  return t.node(
+export const comment = ({
+  value,
+  root,
+  parent,
+  props,
+  siblings,
+  line,
+  column,
+}: {
+  value: string;
+  root: Element;
+  parent: Element | null;
+  props: string;
+  siblings?: Element[];
+  line: number;
+  column: number;
+}): Element => {
+  return {
     value,
     root,
     parent,
-    COMMENT,
-    String.fromCharCode(t.character),
-    value.slice(2, -2),
-    0,
+    type: COMMENT,
+    props,
+    children: value.slice(2, -2),
+    length: 0,
     siblings,
-  );
+    line,
+    column,
+  } as Element;
 };
 
-export const declaration = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  length: number,
-  siblings?: Element[],
-  t?: Tokenizer,
-): Element => {
-  return t.node(
+export const declaration = ({
+  value,
+  root,
+  parent,
+  length,
+  siblings,
+  line,
+  column,
+}: {
+  value: string;
+  root: Element;
+  parent: Element | null;
+  length: number;
+  siblings?: Element[];
+  line: number;
+  column: number;
+}): Element => {
+  return {
     value,
     root,
     parent,
-    DECLARATION,
-    value.slice(-length),
-    value.slice(-length + 1, -1),
+    type: DECLARATION,
+    props: value.slice(-length),
+    children: value.slice(-length + 1, -1),
     length,
     siblings,
-  );
+    line,
+    column,
+  } as Element;
 };
 
 export const parse = (
@@ -158,13 +198,15 @@ export const parse = (
           case 42:
           case 47:
             (declarations as unknown as Element[]).push(
-              comment(
-                t.commenter(t.next(), t.caret()),
+              comment({
+                value: t.commenter(t.next(), t.caret()),
                 root,
                 parent,
-                declarations as unknown as Element[],
-                t,
-              ),
+                props: String.fromCharCode(t.character),
+                siblings: declarations as unknown as Element[],
+                line: t.line,
+                column: t.column,
+              }),
             );
             if (
               (token(previous || 1) === 5 || token(t.peek() || 1) === 5) &&
@@ -201,22 +243,24 @@ export const parse = (
             ) {
               (declarations as unknown as Element[]).push(
                 property > 32
-                  ? declaration(
-                      `${characters};`,
-                      rule as Element,
+                  ? declaration({
+                      value: `${characters};`,
+                      root: rule as Element,
                       parent,
-                      length - 1,
-                      declarations as unknown as Element[],
-                      t,
-                    )
-                  : declaration(
-                      `${characters.replace(" ", "")};`,
-                      rule as Element,
+                      length: length - 1,
+                      siblings: declarations as unknown as Element[],
+                      line: t.line,
+                      column: t.column,
+                    })
+                  : declaration({
+                      value: `${characters.replace(" ", "")};`,
+                      root: rule as Element,
                       parent,
-                      length - 2,
-                      declarations as unknown as Element[],
-                      t,
-                    ),
+                      length: length - 2,
+                      siblings: declarations as unknown as Element[],
+                      line: t.line,
+                      column: t.column,
+                    }),
               );
             }
             break;
@@ -228,8 +272,8 @@ export const parse = (
             props = [];
             children = [];
             rulesets.push(
-              (reference = ruleset(
-                characters,
+              (reference = ruleset({
+                value: characters,
                 root,
                 parent,
                 index,
@@ -240,9 +284,10 @@ export const parse = (
                 props,
                 children,
                 length,
-                rulesets,
-                t,
-              )),
+                siblings: rulesets,
+                line: t.line,
+                column: t.column,
+              })),
             );
 
             if (character === 123) {
@@ -286,22 +331,24 @@ export const parse = (
                     reference,
                     rule &&
                       (() => {
+                        props = [];
                         children.push(
-                          ruleset(
+                          ruleset({
                             value,
-                            reference,
-                            reference,
-                            0,
-                            0,
+                            root: reference,
+                            parent: reference,
+                            index: 0,
+                            offset: 0,
                             rules,
                             points,
                             type,
-                            rules,
-                            (props = []),
+                            props: rules,
+                            children: props as any,
                             length,
-                            children,
-                            t,
-                          ),
+                            siblings: children,
+                            line: t.line,
+                            column: t.column,
+                          }),
                         );
 
                         return children as any;
