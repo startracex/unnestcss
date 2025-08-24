@@ -119,7 +119,7 @@ export class Tokenizer {
     return token(type) > 2 || token(this.character) > 3 ? "" : " ";
   }
 
-  _tokenizer(children: string[]): string[] {
+  protected _tokenizer(children: string[]): string[] {
     while (this.next()) {
       switch (token(this.character)) {
         case 0:
@@ -157,7 +157,7 @@ export class Tokenizer {
     );
   }
 
-  _delimiter(type: number): number {
+  protected _delimiter(type: number): number {
     while (this.next()) {
       switch (this.character) {
         // ] ) " '
