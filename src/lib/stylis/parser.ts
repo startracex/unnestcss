@@ -132,16 +132,28 @@ export const declaration = ({
 };
 
 export const parse = (
-  value: string,
-  root: Element,
-  parent: Element | null,
-  rule: Element | string[],
-  rules: string[],
-  rulesets: Element[],
-  pseudo: number,
-  points: number[],
-  declarations: string[] | Element[],
   t: Tokenizer,
+  {
+    value = "",
+    root = null,
+    parent = null,
+    rule = null,
+    rules = [""],
+    rulesets = [],
+    pseudo = 0,
+    points = [0],
+    declarations = rulesets,
+  }: {
+    value?: string;
+    root?: Element;
+    parent?: Element | null;
+    rule?: Element | string[];
+    rules?: string[];
+    rulesets?: Element[];
+    pseudo?: number;
+    points?: number[];
+    declarations?: string[] | Element[];
+  } = {},
 ): Element[] => {
   let index = 0;
   let offset = 0;
@@ -293,18 +305,17 @@ export const parse = (
 
             if (character === 123) {
               if (offset === 0) {
-                parse(
-                  characters,
+                parse(t, {
+                  value: characters,
                   root,
-                  reference,
-                  reference,
-                  props,
+                  parent: reference,
+                  rule: reference,
+                  rules: props,
                   rulesets,
-                  length,
+                  pseudo: length,
                   points,
-                  children,
-                  t,
-                );
+                  declarations: children,
+                });
               } else {
                 switch (atrule) {
                   // c(ontainer)
@@ -326,11 +337,12 @@ export const parse = (
                     break;
                 }
                 if (offset) {
-                  parse(
+                  parse(t, {
                     value,
-                    reference,
-                    reference,
-                    rule &&
+                    root: reference,
+                    parent: reference,
+                    rule:
+                      rule &&
                       (() => {
                         props = [];
                         children.push(
@@ -354,26 +366,22 @@ export const parse = (
 
                         return children as any;
                       })(),
-                    rules,
-                    children,
-                    length,
+                    rules: rules,
+                    rulesets: children,
+                    pseudo: length,
                     points,
-                    rule ? props : children,
-                    t,
-                  );
+                    declarations: rule ? props : children,
+                  });
                 } else {
-                  parse(
-                    characters,
-                    reference,
-                    reference,
-                    reference,
-                    [""],
-                    children,
-                    0,
+                  parse(t, {
+                    value: characters,
+                    root: reference,
+                    parent: reference,
+                    rule: reference,
+                    rulesets: children,
                     points,
-                    children,
-                    t,
-                  );
+                    declarations: children,
+                  });
                 }
               }
             }
@@ -431,7 +439,6 @@ export const parse = (
 };
 
 export const compile = (value: string): Element[] => {
-  const rulesets = [];
   const t = new Tokenizer(value);
-  return parse("", null, null, null, [""], rulesets, 0, [0], rulesets, t);
+  return parse(t);
 };
