@@ -44,7 +44,10 @@ type SerializeCallback<T, R> = (
   callback: SerializeCallback<T, R>,
 ) => R;
 
-export const serialize = <T, F>(children: T[], callback: SerializeCallback<T, unknown>): string =>
+export const serialize = <T, F = unknown>(
+  children: T[],
+  callback: SerializeCallback<T, F>,
+): string =>
   children.reduce(
     (output, child, index) => output + (callback(child, index, children, callback) || ""),
     "",
