@@ -53,8 +53,12 @@ export class Tokenizer {
   }
 
   prev(): number {
-    this.character = this.position > 0 ? charat(this.characters, --this.position) : 0;
-
+    if (this.position > 0) {
+      this.position--;
+      this.character = charat(this.characters, this.position);
+    } else {
+      this.character = 0;
+    }
     this.column--;
     if (this.character === 10) {
       this.column = 1;
@@ -65,8 +69,12 @@ export class Tokenizer {
   }
 
   next(): number {
-    this.character = this.position < this.length ? charat(this.characters, this.position++) : 0;
-
+    if (this.position < this.length) {
+      this.character = charat(this.characters, this.position);
+      this.position++;
+    } else {
+      this.character = 0;
+    }
     this.column++;
     if (this.character === 10) {
       this.column = 1;
@@ -129,7 +137,9 @@ export class Tokenizer {
   }
 
   escaping(index: number, count: number): string {
-    while (--count && this.next()) {
+    count--;
+    while (count && this.next()) {
+      count--;
       // not 0-9 A-F a-f
       if (
         this.character < 48 ||
@@ -187,9 +197,7 @@ export class Tokenizer {
       }
     }
 
-    return `/*${this.slice(index, this.position - 1)}*${String.fromCharCode(
-      type === 47 ? type : this.next(),
-    )}`;
+    return `/*${this.slice(index, this.position - 1)}*${String.fromCharCode(type === 47 ? type : this.next())}`;
   }
 
   identifier(index: number): string {

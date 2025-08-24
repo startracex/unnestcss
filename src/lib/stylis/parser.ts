@@ -222,7 +222,8 @@ export const parse = (
         break;
       // {
       case 123 * variable:
-        points[index++] = characters.length * ampersand;
+        points[index] = characters.length * ampersand;
+        index++;
       // } ; \0
       case 125 * variable:
       case 59:
@@ -389,7 +390,7 @@ export const parse = (
       default:
         if (variable < 1) {
           if (character === 123) {
-            --variable;
+            variable--;
           } else if (character === 125 && variable++ === 0 && t.prev() === 125) {
             continue;
           }
@@ -402,7 +403,8 @@ export const parse = (
             break;
           // ,
           case 44:
-            points[index++] = (characters.length - 1) * ampersand;
+            points[index] = (characters.length - 1) * ampersand;
+            index++;
             ampersand = 1;
             break;
           // @

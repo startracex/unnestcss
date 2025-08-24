@@ -30,9 +30,11 @@ export const namespace = (element: Element): string | void => {
               return value;
             // :
             case 58:
-              if (children[++index] === "global") {
+              index++;
+              if (children[index] === "global") {
                 children[index] = "";
-                children[++index] = `\f${children[index].slice((index = 1), -1)}`;
+                index++;
+                children[index] = `\f${children[index].slice((index = 1), -1)}`;
               }
             // \s
             case 32:
