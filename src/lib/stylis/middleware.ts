@@ -1,5 +1,14 @@
-import { charat } from "./utility.ts";
-import { RULESET } from "./enum.js";
+import {
+  COLON,
+  FORM_FEED,
+  GREATER_THAN,
+  LEFT_PARENTHESIS,
+  NULL_CHARACTER,
+  PLUS,
+  RULESET,
+  SPACE,
+  TILDE,
+} from "./enum.js";
 import { Tokenizer } from "./tokenizer.ts";
 import type { Element, Middleware } from "./types.ts";
 import { serialize } from "./serializer.ts";
@@ -17,19 +26,22 @@ export const namespace = (element: Element): string | void => {
       new Tokenizer(value)
         .tokenize()
         .map((value, index, children) => {
-          switch (charat(value, 0)) {
+          if (!value) {
+            return value;
+          }
+          switch (value[0]) {
             // \f
-            case 12:
+            case FORM_FEED:
               return value.slice(1, value.length);
             // \0 ( + > ~
-            case 0:
-            case 40:
-            case 43:
-            case 62:
-            case 126:
+            case NULL_CHARACTER:
+            case LEFT_PARENTHESIS:
+            case PLUS:
+            case GREATER_THAN:
+            case TILDE:
               return value;
             // :
-            case 58:
+            case COLON:
               index++;
               if (children[index] === "global") {
                 children[index] = "";
@@ -37,7 +49,7 @@ export const namespace = (element: Element): string | void => {
                 children[index] = `\f${children[index].slice((index = 1), -1)}`;
               }
             // \s
-            case 32:
+            case SPACE:
               return index === 1 ? "" : value;
             default:
               switch (index) {

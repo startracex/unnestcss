@@ -1,5 +1,32 @@
-import { COMMENT, DECLARATION, RULESET } from "./enum.ts";
-import { charat } from "./utility.ts";
+import {
+  AMPERSAND,
+  ASTERISK,
+  AT,
+  CARRIAGE_RETURN,
+  COLON,
+  COMMA,
+  COMMENT,
+  DECLARATION,
+  DOUBLE_QUOTE,
+  FORM_FEED,
+  HORIZONTAL_TAB,
+  MINUS,
+  LEFT_CURLY_BRACKET,
+  LEFT_PARENTHESIS,
+  LEFT_SQUARE_BRACKET,
+  LINE_FEED,
+  NULL_CHARACTER,
+  REVERSE_SOLIDUS,
+  RIGHT_CURLY_BRACKET,
+  RULESET,
+  SEMICOLON,
+  SINGLE_QUOTE,
+  SOLIDUS,
+  SPACE,
+  START_OF_HEADING,
+  UNDERSCORE,
+} from "./enum.ts";
+import { charCodeAt, charCodeFrom, charOr } from "./utility.ts";
 import { token, Tokenizer } from "./tokenizer.ts";
 import type { Element } from "./types.ts";
 
@@ -50,7 +77,7 @@ export const ruleset = ({
       const processedValue =
         pointPosition > 0
           ? `${activeRules[ruleIndex]} ${substring}`
-          : substring.replace(/&\f/g, activeRules[ruleIndex]);
+          : substring.replaceAll(AMPERSAND + FORM_FEED, activeRules[ruleIndex]);
       props[propIndex] = processedValue.trim();
       propIndex++;
     }
@@ -158,106 +185,108 @@ export const parse = (
   let index = 0;
   let offset = 0;
   let length = pseudo;
-  let atrule = 0;
+  let atrule;
   let property = 0;
-  let previous = 0;
   let variable = 1;
-  let scanning = 1;
+  let scanning = true;
   let ampersand = 1;
-  let character = 0;
+  let currentChar: string = NULL_CHARACTER;
+  let previousChar: string = NULL_CHARACTER;
   let type = "";
   let props = rules;
   let children = rulesets;
   let reference = rule;
-  let characters = type;
+  let characters = "";
 
   while (scanning) {
-    previous = character;
-    character = t.next();
-    switch (character) {
+    previousChar = currentChar;
+    currentChar = t.next();
+    switch (currentChar) {
       // (
-      case 40:
-        if (previous !== 108 && charat(characters, length - 1) === 58) {
-          const processedChar = t.delimit(character).replace("&", "&\f");
+      case LEFT_PARENTHESIS:
+        if (characters[length - 1] === COLON) {
+          const processedChar = t.delimit(currentChar).replace(AMPERSAND, AMPERSAND + FORM_FEED);
           characters += processedChar;
           const startPos = Math.abs(index ? points[index - 1] : 0);
 
-          if (characters.indexOf("&\f", startPos) !== -1) {
+          if (characters.indexOf(AMPERSAND + FORM_FEED, startPos) !== -1) {
             ampersand = -1;
           }
           break;
         }
       // " ' [
-      case 34:
-      case 39:
-      case 91:
-        characters += t.delimit(character);
+      case DOUBLE_QUOTE:
+      case SINGLE_QUOTE:
+      case LEFT_SQUARE_BRACKET:
+        characters += t.delimit(currentChar);
         break;
-      // \t \n \r \s
-      case 9:
-      case 10:
-      case 13:
-      case 32:
-        characters += t.whitespace(previous);
+      // \t \n \r
+      case HORIZONTAL_TAB:
+      case LINE_FEED:
+      case CARRIAGE_RETURN:
+      case SPACE:
+        characters += t.whitespace(previousChar);
         break;
       // \
-      case 92:
-        characters += t.escaping(t.caret() - 1, 7);
+      case REVERSE_SOLIDUS:
+        characters += t.escaping(t.position - 1, 7);
         continue;
       // /
-      case 47:
+      case SOLIDUS:
         switch (t.peek()) {
-          case 42:
-          case 47:
+          case ASTERISK:
+          case SOLIDUS: {
             (declarations as unknown as Element[]).push(
               comment({
-                value: t.commenter(t.next(), t.caret()),
+                value: t.commenter(t.next(), t.position),
                 root,
                 parent,
-                props: String.fromCharCode(t.character),
+                props: t.character,
                 siblings: declarations as unknown as Element[],
                 line: t.line,
                 column: t.column,
               }),
             );
             if (
-              (token(previous || 1) === 5 || token(t.peek() || 1) === 5) &&
+              (token(charOr(previousChar, START_OF_HEADING)) === 5 ||
+                token(charOr(t.peek(), START_OF_HEADING)) === 5) &&
               characters.length &&
-              characters.slice(-1) !== " "
+              characters.slice(-1) !== SPACE
             ) {
-              characters += " ";
+              characters += SPACE;
             }
             break;
+          }
           default:
-            characters += "/";
+            characters += SOLIDUS;
         }
         break;
       // {
-      case 123 * variable:
+      case charCodeFrom(123 * variable):
         points[index] = characters.length * ampersand;
         index++;
       // } ; \0
-      case 125 * variable:
-      case 59:
-      case 0:
-        switch (character) {
+      case charCodeFrom(125 * variable):
+      case SEMICOLON:
+      case NULL_CHARACTER:
+        switch (currentChar) {
           // \0 }
-          case 0:
-          case 125:
-            scanning = 0;
+          case NULL_CHARACTER:
+          case RIGHT_CURLY_BRACKET:
+            scanning = false;
           // ;
-          case 59 + offset:
+          case charCodeFrom(59 + offset):
             if (ampersand === -1) {
-              characters = characters.replace(/\f/g, "");
+              characters = characters.replace(FORM_FEED, "");
             }
             if (
               property > 0 &&
-              (characters.length - length || (variable === 0 && previous === 47))
+              (characters.length - length || (variable === 0 && previousChar === SOLIDUS))
             ) {
               (declarations as unknown as Element[]).push(
                 property > 32
                   ? declaration({
-                      value: `${characters};`,
+                      value: characters + SEMICOLON,
                       root: rule as Element,
                       parent,
                       length: length - 1,
@@ -266,7 +295,7 @@ export const parse = (
                       column: t.column,
                     })
                   : declaration({
-                      value: `${characters.replace(" ", "")};`,
+                      value: characters.replace(SPACE, "") + SEMICOLON,
                       root: rule as Element,
                       parent,
                       length: length - 2,
@@ -278,8 +307,8 @@ export const parse = (
             }
             break;
           // @ ;
-          case 59:
-            characters += ";";
+          case SEMICOLON:
+            characters += SEMICOLON;
           // { rule/at-rule
           default:
             props = [];
@@ -303,7 +332,7 @@ export const parse = (
               })),
             );
 
-            if (character === 123) {
+            if (currentChar === LEFT_CURLY_BRACKET) {
               if (offset === 0) {
                 parse(t, {
                   value: characters,
@@ -319,55 +348,52 @@ export const parse = (
               } else {
                 switch (atrule) {
                   // c(ontainer)
-                  case 99:
-                    if (charat(characters, 3) === 110) {
+                  case "c":
+                    if (characters.slice(2, 10) === "ontainer") {
                       break;
                     }
                     offset = 0;
                   // l(ayer)
-                  case 108:
-                    if (charat(characters, 2) === 97) {
+                  case "l":
+                    if (characters.slice(2, 6) === "ayer") {
                       break;
                     }
                     offset = 0;
                   // d(ocument) m(edia) s(upports)
-                  case 100:
-                  case 109:
-                  case 115:
+                  case "d":
+                  case "m":
+                  case "s":
                     break;
                   default:
                     offset = 0;
                 }
                 if (offset) {
+                  if (rule) {
+                    props = [];
+                    children.push(
+                      ruleset({
+                        value,
+                        root: reference,
+                        parent: reference,
+                        index: 0,
+                        offset: 0,
+                        rules,
+                        points,
+                        type,
+                        props: rules,
+                        children: props as any,
+                        length,
+                        siblings: children,
+                        line: t.line,
+                        column: t.column,
+                      }),
+                    );
+                  }
                   parse(t, {
                     value,
                     root: reference,
                     parent: reference,
-                    rule:
-                      rule &&
-                      (() => {
-                        props = [];
-                        children.push(
-                          ruleset({
-                            value,
-                            root: reference,
-                            parent: reference,
-                            index: 0,
-                            offset: 0,
-                            rules,
-                            points,
-                            type,
-                            props: rules,
-                            children: props as any,
-                            length,
-                            siblings: children,
-                            line: t.line,
-                            column: t.column,
-                          }),
-                        );
-
-                        return children as any;
-                      })(),
+                    rule: children as any,
                     rules: rules,
                     rulesets: children,
                     pseudo: length,
@@ -394,43 +420,51 @@ export const parse = (
         length = pseudo;
         break;
       // :
-      case 58:
+      case COLON:
         length = 1 + characters.length;
-        property = previous;
+        property = charCodeAt(previousChar);
       default:
         if (variable < 1) {
-          if (character === 123) {
+          if (currentChar === LEFT_CURLY_BRACKET) {
             variable--;
-          } else if (character === 125 && variable++ === 0 && t.prev() === 125) {
-            continue;
+          } else if (currentChar === RIGHT_CURLY_BRACKET) {
+            variable++;
+            if (variable === 1 && t.prev() === RIGHT_CURLY_BRACKET) {
+              continue;
+            }
           }
         }
-        characters += String.fromCharCode(character);
-        switch (character * variable) {
+        characters += currentChar;
+        switch (charCodeFrom(charCodeAt(currentChar) * variable)) {
           // &
-          case 38:
-            ampersand = offset > 0 ? 1 : ((characters += "\f"), -1);
+          case AMPERSAND:
+            if (offset > 0) {
+              ampersand = 1;
+            } else {
+              characters += FORM_FEED;
+              ampersand = -1;
+            }
             break;
           // ,
-          case 44:
+          case COMMA:
             points[index] = (characters.length - 1) * ampersand;
             index++;
             ampersand = 1;
             break;
           // @
-          case 64:
+          case AT:
             // -
-            if (t.peek() === 45) {
+            if (t.peek() === MINUS) {
               characters += t.delimit(t.next());
             }
             atrule = t.peek();
-            type = characters += t.identifier(t.caret());
+            type = characters += t.identifier(t.position);
             offset = length = type.length;
-            character++;
+            currentChar = UNDERSCORE;
             break;
           // -
-          case 45:
-            if (previous === 45 && characters.length === 2) {
+          case MINUS:
+            if (previousChar === MINUS && characters.length === 2) {
               variable = 0;
             }
         }
@@ -440,7 +474,4 @@ export const parse = (
   return rulesets;
 };
 
-export const compile = (value: string): Element[] => {
-  const t = new Tokenizer(value);
-  return parse(t);
-};
+export const compile = (value: string): Element[] => parse(new Tokenizer(value));

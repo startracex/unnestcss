@@ -1,4 +1,13 @@
-import { IMPORT, LAYER, COMMENT, RULESET, DECLARATION, KEYFRAMES, NAMESPACE } from "./enum.ts";
+import {
+  IMPORT,
+  LAYER,
+  COMMENT,
+  RULESET,
+  DECLARATION,
+  KEYFRAMES,
+  NAMESPACE,
+  COMMA,
+} from "./enum.ts";
 import type { Element, Middleware } from "./types.ts";
 
 export const stringify = (
@@ -22,7 +31,7 @@ export const stringify = (
       element.return = `${element.value}{${serialize(element.children, callback)}}`;
       return element.return;
     case RULESET:
-      element.value = element.props.join(",");
+      element.value = element.props.join(COMMA);
       if (element.value === "") {
         return "";
       }

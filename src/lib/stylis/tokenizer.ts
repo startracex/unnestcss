@@ -1,42 +1,67 @@
-import { charat } from "./utility.ts";
+import {
+  ASTERISK,
+  AT,
+  CARRIAGE_RETURN,
+  COLON,
+  COMMA,
+  DOUBLE_QUOTE,
+  EXCLAMATION,
+  GREATER_THAN,
+  HORIZONTAL_TAB,
+  LEFT_CURLY_BRACKET,
+  LEFT_PARENTHESIS,
+  LEFT_SQUARE_BRACKET,
+  LINE_FEED,
+  NULL_CHARACTER,
+  PLUS,
+  REVERSE_SOLIDUS,
+  RIGHT_CURLY_BRACKET,
+  RIGHT_PARENTHESIS,
+  RIGHT_SQUARE_BRACKET,
+  SEMICOLON,
+  SINGLE_QUOTE,
+  SOLIDUS,
+  SPACE,
+  TILDE,
+} from "./enum.ts";
+import { charCodeAt, isHexChar } from "./utility.ts";
 
-export const token = (type: number): number => {
+export const token = (type: string): number => {
   switch (type) {
-    // \0 \t \n \r \s whitespace token
-    case 0:
-    case 9:
-    case 10:
-    case 13:
-    case 32:
+    // \0 \t \n \r    whitespace token
+    case NULL_CHARACTER:
+    case HORIZONTAL_TAB:
+    case LINE_FEED:
+    case CARRIAGE_RETURN:
+    case SPACE:
       return 5;
     // ! + , / > @ ~ isolate token
-    case 33:
-    case 43:
-    case 44:
-    case 47:
-    case 62:
-    case 64:
-    case 126:
+    case EXCLAMATION:
+    case PLUS:
+    case COMMA:
+    case SOLIDUS:
+    case GREATER_THAN:
+    case AT:
+    case TILDE:
     // ; { } breakpoint token
-    case 59:
-    case 123:
-    case 125:
+    case SEMICOLON:
+    case LEFT_CURLY_BRACKET:
+    case RIGHT_CURLY_BRACKET:
       return 4;
     // : accompanied token
-    case 58:
+    case COLON:
       return 3;
     // " ' ( [ opening delimit token
-    case 34:
-    case 39:
-    case 40:
-    case 91:
+    case DOUBLE_QUOTE:
+    case SINGLE_QUOTE:
+    case LEFT_PARENTHESIS:
+    case LEFT_SQUARE_BRACKET:
       return 2;
     // ) ] closing delimit token
-    case 41:
-    case 93:
+    case RIGHT_PARENTHESIS:
+    case RIGHT_SQUARE_BRACKET:
       return 1;
   }
-
   return 0;
 };
 
@@ -45,61 +70,61 @@ export class Tokenizer {
   column = 1;
   length = 0;
   position = 0;
-  character = 0;
-  characters = "";
+  character?: string;
+  characters: string;
   constructor(value: string) {
     this.characters = value;
     this.length = this.characters.length;
   }
 
-  prev(): number {
+  prev(): string {
     if (this.position > 0) {
       this.position--;
-      this.character = charat(this.characters, this.position);
+      this.character = this.characters[this.position];
     } else {
-      this.character = 0;
+      this.character = NULL_CHARACTER;
     }
     this.column--;
-    if (this.character === 10) {
+    if (this.character === LINE_FEED) {
       this.column = 1;
       this.line--;
     }
-
     return this.character;
   }
 
-  next(): number {
+  next(): string {
     if (this.position < this.length) {
-      this.character = charat(this.characters, this.position);
+      this.character = this.characters[this.position];
       this.position++;
     } else {
-      this.character = 0;
+      this.character = NULL_CHARACTER;
     }
     this.column++;
-    if (this.character === 10) {
+    if (this.character === LINE_FEED) {
       this.column = 1;
       this.line++;
     }
-
     return this.character;
   }
 
-  peek(): number {
-    return charat(this.characters, this.position);
-  }
-
-  caret(): number {
-    return this.position;
+  peek(): string {
+    return this.characters[this.position] || NULL_CHARACTER;
   }
 
   slice(begin: number, end: number): string {
     return this.characters.slice(begin, end);
   }
 
-  delimit(type: number): string {
+  delimit(type: string): string {
     return this.slice(
       this.position - 1,
-      this._delimiter(type === 91 ? type + 2 : type === 40 ? type + 1 : type),
+      this._delimiter(
+        type === LEFT_SQUARE_BRACKET
+          ? RIGHT_SQUARE_BRACKET
+          : type === LEFT_PARENTHESIS
+            ? RIGHT_PARENTHESIS
+            : type,
+      ),
     ).trim();
   }
 
@@ -107,20 +132,21 @@ export class Tokenizer {
     return this._tokenizer([]);
   }
 
-  whitespace(type: number): string {
-    while ((this.character = this.peek())) {
-      if (this.character < 33) {
+  whitespace(type: string): string {
+    this.character = this.peek();
+    while (this.character !== NULL_CHARACTER) {
+      this.character = this.peek();
+      if (charCodeAt(this.character) < 33) {
         this.next();
       } else {
         break;
       }
     }
-
-    return token(type) > 2 || token(this.character) > 3 ? "" : " ";
+    return token(type) > 2 || token(this.character) > 3 ? "" : SPACE;
   }
 
   protected _tokenizer(children: string[]): string[] {
-    while (this.next()) {
+    while (this.next() !== NULL_CHARACTER) {
       switch (token(this.character)) {
         case 0:
           children.push(this.identifier(this.position - 1));
@@ -129,82 +155,72 @@ export class Tokenizer {
           children.push(this.delimit(this.character));
           break;
         default:
-          children.push(String.fromCharCode(this.character));
+          children.push(this.character);
       }
     }
-
     return children;
   }
 
   escaping(index: number, count: number): string {
     count--;
-    while (count && this.next()) {
+    while (count && this.next() !== NULL_CHARACTER) {
       count--;
       // not 0-9 A-F a-f
-      if (
-        this.character < 48 ||
-        this.character > 102 ||
-        (this.character > 57 && this.character < 65) ||
-        (this.character > 70 && this.character < 97)
-      ) {
+      if (!isHexChar(this.character)) {
         break;
       }
     }
-
     return this.slice(
       index,
-      this.caret() + +(count < 6 && this.peek() === 32 && this.next() === 32),
+      this.position + +(count < 6 && this.peek() === SPACE && this.next() === SPACE),
     );
   }
 
-  protected _delimiter(type: number): number {
-    while (this.next()) {
+  protected _delimiter(type: string): number {
+    while (this.next() !== NULL_CHARACTER) {
       switch (this.character) {
         // ] ) " '
         case type:
           return this.position;
         // " '
-        case 34:
-        case 39:
-          if (type !== 34 && type !== 39) {
+        case DOUBLE_QUOTE:
+        case SINGLE_QUOTE:
+          if (type !== DOUBLE_QUOTE && type !== SINGLE_QUOTE) {
             this._delimiter(this.character);
           }
           break;
         // (
-        case 40:
-          if (type === 41) {
+        case LEFT_PARENTHESIS:
+          if (type === RIGHT_PARENTHESIS) {
             this._delimiter(type);
           }
           break;
         // \
-        case 92:
+        case REVERSE_SOLIDUS:
           this.next();
           break;
       }
     }
-
     return this.position;
   }
 
-  commenter(type: number, index: number): string {
-    while (this.next()) {
+  commenter(type: string, index: number): string {
+    while (this.next() !== NULL_CHARACTER) {
       // //
-      if (type + this.character === 47 + 10) {
+      if (type === SOLIDUS && this.character === LINE_FEED) {
         break;
       } // /*
-      else if (type + this.character === 42 + 42 && this.peek() === 47) {
+      if (type === ASTERISK && this.character === ASTERISK && this.peek() === SOLIDUS) {
         break;
       }
     }
-
-    return `/*${this.slice(index, this.position - 1)}*${String.fromCharCode(type === 47 ? type : this.next())}`;
+    return `/*${this.slice(index, this.position - 1)}*${type === SOLIDUS ? type : this.next()}`;
   }
 
   identifier(index: number): string {
     while (!token(this.peek())) {
       this.next();
     }
-
     return this.slice(index, this.position);
   }
 }
