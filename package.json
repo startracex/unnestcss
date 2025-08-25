@@ -13,12 +13,12 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.0",
+    "@biomejs/biome": "2.2.2",
     "@startracex/dev-config": "^0.5.0",
     "@types/node": "^24.3.0",
     "dprint": "^0.50.1",
     "lefthook": "^1.12.3",
-    "rollup": "4.47.1",
+    "rollup": "4.48.1",
     "rollup-plugin-oxc": "^0.7.0",
     "vitest": "^3.2.4"
   },
