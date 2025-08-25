@@ -323,18 +323,20 @@ export const parse = (
                     if (charat(characters, 3) === 110) {
                       break;
                     }
+                    offset = 0;
                   // l(ayer)
                   case 108:
                     if (charat(characters, 2) === 97) {
                       break;
                     }
-                  default:
                     offset = 0;
                   // d(ocument) m(edia) s(upports)
                   case 100:
                   case 109:
                   case 115:
                     break;
+                  default:
+                    offset = 0;
                 }
                 if (offset) {
                   parse(t, {
