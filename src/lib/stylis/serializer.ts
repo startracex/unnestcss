@@ -37,10 +37,10 @@ export const stringify = (
       }
   }
 
-  children = serialize(element.children, callback) as any;
+  const childrenStr = serialize(element.children, callback);
 
-  if (children) {
-    element.return = `${element.value}{${children}}`;
+  if (childrenStr) {
+    element.return = `${element.value}{${childrenStr}}`;
     return element.return;
   }
   return "";
