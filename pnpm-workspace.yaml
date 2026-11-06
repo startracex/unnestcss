@@ -1,2 +1,5 @@
 allowBuilds:
   lefthook: true
+
+minimumReleaseAge: 0
+minimumReleaseAgeStrict: false
