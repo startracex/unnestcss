@@ -1,4 +1,4 @@
-import { compile, middleware, serialize, stringify } from "./lib/stylis.ts";
+import { compile, middleware, serialize, stringify } from "./lib/css.ts";
 import { host } from "./lib/host.ts";
 
 export const unnest = (css: string): string =>
