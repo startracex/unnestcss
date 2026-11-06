@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { compile, middleware, serialize, stringify } from "./stylis.ts";
+import { compile, middleware, serialize, stringify } from "./css.ts";
 import host from "./host.ts";
 
 function serializeHost(value: string): string {
